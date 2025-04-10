@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Captioning</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f7f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    /* Container Card */
+    .container {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 600px;
+    }
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #333;
+    }
+    .header p {
+      margin: 0.5rem 0 0;
+      color: #666;
+    }
+    /* Form Styling */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .file-input-container {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-input-container input[type="file"] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .file-input-label {
+      background-color: #007BFF;
+      color: #fff;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-block;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    .file-input-label:hover {
+      background-color: #0056b3;
+    }
+    button[type="submit"] {
+      background-color: #28a745;
+      border: none;
+      padding: 0.8rem;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button[type="submit"]:hover {
+      background-color: #218838;
+    }
+    .error {
+      color: #dc3545;
+      font-weight: 500;
+      text-align: center;
+    }
+    /* Image Preview */
+    .preview {
+      text-align: center;
+      min-height: 300px; 
+      background-color: #e9ecef;
+      border: 2px dashed #ced4da;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      position: relative;
+    }
+    .preview.dragover {
+      background-color: #d0e9ff;
+      border-color: #80bdff;
+    }
+    .preview img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      display: none;
+    }
+    .preview span {
+      color: #666;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    /* Caption Display */
+    .caption {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.5s ease-in;
+    }
+    .caption h2 {
+      margin: 0;
+      color: #333;
+      font-size: 1.5rem;
+    }
+    .caption p {
+      margin: 0.5rem 0 0;
+      color: #555;
+      font-size: 1.1rem;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AI bildetekst</h1>
+      <p>Last opp bilde og motta ai generert tekst</p>
+    </div>
+    
+    <!-- Display error message if any -->
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+    
+    <form action="/" method="post" enctype="multipart/form-data">
+      <div class="preview" id="preview-box">
+        <img id="img-preview" src="#" alt="Image Preview">
+        <span id="preview-text">Slipp et bilde her eller klikk velg et bilde</span>
+      </div>
+      <div class="file-input-container">
+        <label class="file-input-label" for="image-upload">Velg et bilde</label>
+        <input type="file" id="image-upload" name="image" accept="image/*" required>
+      </div>
+      <button type="submit">Last opp og generer bildetekst</button>
+    </form>
+    
+    <!-- Display the generated caption -->
+    {% if caption %}
+      <div class="caption">
+        <h2>Generert Bildetekst:</h2>
+        <p>{{ caption }}</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <script>
+    const previewBox = document.getElementById('preview-box');
+    const imgPreview = document.getElementById('img-preview');
+    const previewText = document.getElementById('preview-text');
+    const fileInput = document.getElementById('image-upload');
+
+    // Function to display the image preview
+    function displayImage(file) {
+      imgPreview.src = URL.createObjectURL(file);
+      imgPreview.style.display = 'block';
+      previewText.style.display = 'none';
+    }
+
+    // Handle file selection via input
+    fileInput.addEventListener('change', function(event) {
+      const [file] = event.target.files;
+      if (file) {
+        displayImage(file);
+      }
+    });
+
+    // Drag and drop events on preview box
+    previewBox.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      previewBox.classList.add('dragover');
+    });
+
+    previewBox.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      previewBox.classList.remove('dragover');
+    });
+
+    previewBox.addEventListener('drop', function(e) {
+      e.preventDefault();
+      previewBox.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        // Update the file input using DataTransfer 
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        displayImage(file);
+      }
+    });
+  </script>
+</body>
+</html>
